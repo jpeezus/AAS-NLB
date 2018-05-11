@@ -1,0 +1,350 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "StandardLoadBalancer": {
+      "type": "string",
+      "defaultValue": "Standard",
+      "allowedValues": [
+                "Standard"
+            ],
+      "metadata": {
+        "description": "Standard Preview of PubIP and ILB"
+      }
+    },
+    "networkSecurityGroupName": {
+      "type": "string",
+      "defaultValue": "nsg-mgmt",
+      "metadata": {
+        "description": "Network Security Group Name"
+      }
+    },
+    "networkSecurityGroupInboundSrcIP": {
+       "type": "string",
+       "metadata": {
+           "description": "Your source public IP address. Added to the inbound NSG on eth0 (MGMT), to restrict access to the deployment."
+       },
+       "defaultValue": "0.0.0.0/0"
+    },
+    "virtualNetworkName": {
+      "type": "string",
+      "defaultValue": "vnet-FW",
+      "metadata": {
+        "description": "Virtual Network Name"
+      }
+    },
+    "virtualNetworkNewOrExisting": {
+            "type": "string",
+            "defaultValue": "new",
+            "allowedValues": [
+                "new",
+                "existing"
+            ],
+            "metadata": {
+                "description": "Select whether to use a new or existing Virtual Network, specified by virtualNetworkName"
+            }
+    },
+    "virtualNetworkAddressPrefix": {
+      "type": "string",
+      "defaultValue": "192.168.0.0/16",
+      "metadata": {
+        "description": "CIDR for Virtual Network"
+      }
+    },
+    "MgmtSubnetName": {
+      "type": "string",
+      "defaultValue": "Mgmt",
+      "metadata": {
+        "description": "Subnet for Management Network"
+      }
+    },
+    "mgmtSubnetPrefix": {
+      "type": "string",
+      "defaultValue": "192.168.0.0/24",
+      "metadata": {
+        "description": "CIDR for Management Network"
+      }
+    },  
+    "dbSubnetName": {
+      "type": "string",
+      "defaultValue": "dbsubnet",
+      "metadata": {
+        "description": "Subnet for Database Network"
+      }
+    },
+    "dbSubnetPrefix": {
+      "type": "string",
+      "defaultValue": "192.168.43.0/24",
+      "metadata": {
+        "description": "CIDR for DB Network"
+      }
+    },
+    "internalLoadBalancerName": {
+      "type": "string",
+      "defaultValue": "myPrivateLB",
+      "metadata": {
+        "description": "Internal Load Balancer name - used to identify resource in Azure portal"
+      }
+    },
+    "backendSubnetName": {
+      "type": "string",
+      "defaultValue": "backendSubnet",
+      "metadata": {
+        "description": "Subnet for Backend WWW Network"
+      }
+    },
+    "backendSubnetPrefix": {
+      "type": "string",
+      "defaultValue": "192.168.42.0/24",
+      "metadata": {
+        "description": "CIDR for Backend WWW Network"
+      }
+    },
+    "backendVmSize": {
+       "type": "string",
+       "allowedValues": [
+          "Standard_A1_v2",
+          "Standard_A1",
+          "Standard_D1",
+          "Standard_D1_v2"
+       ],
+       "metadata": {
+          "description": "Azure VM size for backend VMs.  Not all sizes are available in all regions."
+       },
+       "defaultValue": "Standard_A1_v2"
+    },
+    "storageAccountName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the storage account created to store the VM's disks.  Storage account name must be globally unique."
+      } 
+    },
+    "storageAccountNewOrExisting" : {
+       "type": "string",
+       "defaultValue" : "new",
+       "allowedValues" : [
+          "new",
+          "existing"
+       ],
+       "metadata": {
+          "Description": "Select new or existing Storage Account, specified by storageAccountName"
+       }
+    },
+    "storageAccountType": {
+      "type": "string",
+      "allowedValues": [
+        "Standard_LRS",
+        "Standard_GRS",
+        "Premium_LRS",
+        "Standard_RAGRS"
+      ],
+      "metadata": {
+        "description": "Type of the storage account created"
+      },
+      "defaultValue": "Standard_LRS"
+    },
+    "username": {
+      "type": "string",
+      "defaultValue": "azureadmin",
+      "metadata": {
+        "description": "Username of the administrator account of VM instances"
+      }
+    },
+    "authenticationType": {
+      "type": "string",
+      "metadata": {
+        "description": "Type of administrator user authentication "
+      },
+      "allowedValues": [
+        "sshPublicKey",
+        "password"
+      ],
+      "defaultValue": "sshPublicKey"
+    },
+    "password": {
+      "type": "securestring",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Password for the administrator account of all VM instances. Must be specified if Authentication Type is 'password'."
+      }
+    },
+    "sshPublicKey": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "SSH RSA public key file as a string. Required even if password is Selected!!'."
+      }
+    }
+  },
+  "variables": {
+    "location" : "[resourceGroup().location]",
+    "rgname" : "[resourceGroup().name]",
+    "baseUrl" : "https://raw.githubusercontent.com/jasonmeurer/azure-appgw-stdv2/master/",
+    "nsgURL" : "[concat(variables('baseUrl'),'/nsg-new.json')]",
+    "vnetURL" : "[concat(variables('baseUrl'),'/vnet-', parameters('virtualNetworkNewOrExisting'),'.json')]",
+    "privateLBURL" : "[concat(variables('baseUrl'),'/private-lb-', parameters('authenticationType'),'.json')]",
+    "storageAccountSetupURL" : "[concat(variables('baseUrl'),'/storageAccount-',parameters('storageAccountNewOrExisting'),'.json')]"
+  },
+  "resources": [
+    {
+      "name": "SetupNSG",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2015-01-01",
+      "properties": { 
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[variables('nsgURL')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "location": {
+            "value": "[variables('location')]"
+          },
+          "virtualNetworkName": {
+            "value": "[parameters('virtualNetworkName')]"
+          },
+          "nsgName": {
+            "value": "[parameters('networkSecurityGroupName')]"
+          },
+          "srcIPInboundNSG": {
+            "value": "[parameters('networkSecurityGroupInboundSrcIP')]"
+          },
+          "virtualNetworkAddressPrefix": {
+            "value": "[parameters('virtualNetworkAddressPrefix')]"
+          }
+        }
+      }
+    },
+    {
+      "name": "SetupVNET",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2015-01-01",
+      "dependsOn": [
+        "Microsoft.Resources/deployments/SetupNSG"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[variables('vnetURL')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "nsgName": {
+            "value": "[parameters('networkSecurityGroupName')]"
+          },
+          "virtualNetworkName": {
+            "value": "[parameters('virtualNetworkName')]"
+          },
+          "virtualNetworkAddressPrefix": {
+            "value": "[parameters('virtualNetworkAddressPrefix')]"
+          },
+          "subnet0Name": {
+               "value": "[parameters('MgmtSubnetName')]"
+          },
+          "subnetdbName": {
+               "value": "[parameters('dbSubnetName')]"
+          },
+          "subnetWWWName": {
+               "value": "[parameters('backendSubnetName')]"
+          },
+          "subnet0Prefix": {
+               "value": "[parameters('mgmtSubnetPrefix')]"
+          },
+          "subnetdbPrefix": {
+               "value": "[parameters('dbSubnetPrefix')]"
+          },
+          "subnetWWWPrefix": {
+               "value": "[parameters('backendSubnetPrefix')]"
+          }
+        }
+      }
+    },
+     {
+      "name": "SettingUpStorageAccount",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2015-01-01",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[variables('storageAccountSetupURL')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "location": {
+            "value": "[variables('location')]"
+          },
+          "storageAccountType": {
+            "value": "[parameters('storageAccountType')]"
+          },
+          "storageAccountName": {
+            "value": "[parameters('storageAccountName')]"
+          }
+        }
+      }
+     },
+     {
+      "name": "SetupInternalLoadBalancer",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2015-01-01",
+      "dependsOn": [
+        "Microsoft.Resources/deployments/SetupVNET"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[variables('privateLBURL')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "storageAccountName": {
+               "value": "[reference('SettingUpStorageAccount').outputs.sid.value]"
+          },
+          "virtualNetworkName": {
+               "value": "[reference('SetupVNET').outputs.vnetName.value]"
+          },
+          "virtualNetworkExistingRGName": {
+               "value": "[variables('rgname')]"
+          },
+          "lbName": {
+               "value": "[parameters('internalLoadBalancerName')]"
+          },
+          "adminUsername": {
+               "value": "[parameters('username')]"
+          },
+          "adminPassword": {
+               "value": "[parameters('password')]"
+          },
+          "sshKey": {
+               "value": "[parameters('sshPublicKey')]"
+          },
+          "subnetName": {
+               "value": "[parameters('backendSubnetName')]"
+          },
+          "vmSize": {
+               "value": "[parameters('backendVmSize')]"
+          },
+          "StandardLoadBalancer": {
+               "value": "[parameters('StandardLoadBalancer')]"
+          },
+          "subnetdbName": {
+               "value": "[parameters('dbSubnetName')]"
+          },
+          "subnetdbPrefix": {
+               "value": "[parameters('dbSubnetPrefix')]"
+          },
+          "subnetwwwPrefix": {
+               "value": "[parameters('backendSubnetPrefix')]"
+          },
+          "vnetrange": {
+                "value": "[parameters('virtualNetworkAddressPrefix')]"
+          },
+          "baseUrl": {
+               "value": "[variables('baseUrl')]"
+          }
+        }
+       }
+     }
+  ],
+  "outputs": {
+  }
+}
