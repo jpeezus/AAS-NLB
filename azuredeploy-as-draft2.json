@@ -179,10 +179,10 @@
   "variables": {
     "location" : "[resourceGroup().location]",
     "rgname" : "[resourceGroup().name]",
-    "baseUrl" : "https://raw.githubusercontent.com/jasonmeurer/azure-appgw-stdv2/master/",
+    "baseUrl" : "https://raw.githubusercontent.com/jpeezus/AAS-NLB/master",
     "nsgURL" : "[concat(variables('baseUrl'),'/nsg-new.json')]",
     "vnetURL" : "[concat(variables('baseUrl'),'/vnet-', parameters('virtualNetworkNewOrExisting'),'.json')]",
-    "privateLBURL" : "[concat(variables('baseUrl'),'/private-lb-', parameters('authenticationType'),'.json')]",
+    "privateLBURL" : "[concat(variables('baseUrl'),'/private-lb2-', parameters('authenticationType'),'.json')]",
     "storageAccountSetupURL" : "[concat(variables('baseUrl'),'/storageAccount-',parameters('storageAccountNewOrExisting'),'.json')]"
   },
   "resources": [
