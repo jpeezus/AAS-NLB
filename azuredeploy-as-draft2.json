@@ -64,7 +64,21 @@
       "metadata": {
         "description": "CIDR for Management Network"
       }
-    },  
+    },
+    "trustedSubnetName": {
+      "type": "string",
+      "defaultValue": "Trust",
+      "metadata": {
+        "description": "Subnet for Trusted Network"
+      }
+    },
+    "trustedSubnetPrefix": {
+      "type": "string",
+      "defaultValue": "192.168.41.0/24",
+      "metadata": {
+        "description": "CIDR for Trusted Network"
+      }
+    },    
     "dbSubnetName": {
       "type": "string",
       "defaultValue": "dbsubnet",
@@ -241,6 +255,9 @@
           "subnet0Name": {
                "value": "[parameters('MgmtSubnetName')]"
           },
+          "subnet2Name": {
+               "value": "[parameters('trustedSubnetName')]"
+          },
           "subnetdbName": {
                "value": "[parameters('dbSubnetName')]"
           },
@@ -249,6 +266,9 @@
           },
           "subnet0Prefix": {
                "value": "[parameters('mgmtSubnetPrefix')]"
+          },
+          "subnet2Prefix": {
+               "value": "[parameters('trustedSubnetPrefix')]"
           },
           "subnetdbPrefix": {
                "value": "[parameters('dbSubnetPrefix')]"
@@ -320,11 +340,20 @@
           "subnetName": {
                "value": "[parameters('backendSubnetName')]"
           },
+          "frontendSubnetName": {
+               "value": "[parameters('trustedSubnetName')]"
+          },
           "vmSize": {
                "value": "[parameters('backendVmSize')]"
           },
           "StandardLoadBalancer": {
                "value": "[parameters('StandardLoadBalancer')]"
+          },
+          "fwTrustIPAddresses": {
+               "value": "[reference('SetupVMSeries').outputs.TrustPrivateIPAddresses.value]"
+          },
+          "subnet2Name": {
+               "value": "[parameters('trustedSubnetName')]"
           },
           "subnetdbName": {
                "value": "[parameters('dbSubnetName')]"
@@ -338,6 +367,9 @@
           "vnetrange": {
                 "value": "[parameters('virtualNetworkAddressPrefix')]"
           },
+          "trustPrefix": {
+                "value": "[parameters('trustedSubnetPrefix')]"
+              },
           "baseUrl": {
                "value": "[variables('baseUrl')]"
           }
