@@ -349,9 +349,6 @@
           "StandardLoadBalancer": {
                "value": "[parameters('StandardLoadBalancer')]"
           },
-          "fwTrustIPAddresses": {
-               "value": "[reference('SetupVMSeries').outputs.TrustPrivateIPAddresses.value]"
-          },
           "subnet2Name": {
                "value": "[parameters('trustedSubnetName')]"
           },
