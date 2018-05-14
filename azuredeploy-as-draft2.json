@@ -338,6 +338,9 @@
           "LBpublicIPAddressName": {
                "value": "[parameters('LBFrontendPIP')]"
           },
+          "location": {
+            "value": "[variables('location')]"
+          },
           "adminUsername": {
                "value": "[parameters('username')]"
           },
