@@ -95,7 +95,7 @@
     },
     "internalLoadBalancerName": {
       "type": "string",
-      "defaultValue": "myPrivateLB",
+      "defaultValue": "BackendLB",
       "metadata": {
         "description": "Internal Load Balancer name - used to identify resource in Azure portal"
       }
